@@ -968,34 +968,46 @@ html,body { width:${w}mm; height:${h}mm; overflow:hidden; background:white; }
 `;
 }
 
+function _renderBarcodeCanvas(val, tipo) {
+  /* Ritorna un canvas con il barcode disegnato, oppure null se fallisce tutto */
+  const canvas = document.createElement('canvas');
+  const opts = { width:2, height:55, displayValue:true,
+                 fontSize:14, textMargin:3, margin:5,
+                 background:'#f5f0e8', lineColor:'#000000' };
+
+  /* 1° tentativo: formato selezionato */
+  try { JsBarcode(canvas, val, { ...opts, format: tipo }); return canvas; }
+  catch(e) {}
+
+  /* 2° tentativo: CODE128 accetta qualsiasi stringa */
+  try { JsBarcode(canvas, val, { ...opts, format: 'CODE128' }); return canvas; }
+  catch(e) {}
+
+  return null;
+}
+
 function _apriPrint(titolo) {
   aggiorna();
-  const fmt  = FORMATI.find(f => f.id === formatoAttuale);
-  const bVal = document.getElementById('barcode_val').value.trim();
-  const bTipo= document.getElementById('barcode_type').value;
+  const fmt   = FORMATI.find(f => f.id === formatoAttuale);
+  const bVal  = document.getElementById('barcode_val').value.trim();
+  const bTipo = document.getElementById('barcode_type').value;
 
-  /* Clona la label e sostituisce l'SVG con un'immagine PNG
-     generata su canvas nella pagina corrente (JsBarcode già caricato) */
+  /* Clona la label */
   const clone = document.getElementById('etichetta').cloneNode(true);
   clone.removeAttribute('id');
 
+  /* Disegna il barcode su canvas e lo inietta come <img> data-URL */
   if (bVal) {
-    const canvas = document.createElement('canvas');
-    try {
-      JsBarcode(canvas, bVal, {
-        format: bTipo,
-        width: 2, height: 55,
-        displayValue: true, fontSize: 14, textMargin: 3,
-        margin: 5,
-        background: '#f5f0e8',
-        lineColor: '#000000'
-      });
-      const img = document.createElement('img');
-      img.src = canvas.toDataURL('image/png');
-      img.style.cssText = 'max-width:85px;width:85px;display:block;';
-      const svgEl = clone.querySelector('#barcode-svg');
-      if (svgEl) svgEl.replaceWith(img);
-    } catch(e) {}
+    const canvas = _renderBarcodeCanvas(bVal, bTipo);
+    if (canvas) {
+      const dataUrl = canvas.toDataURL('image/png');
+      /* Sostituisce l'INTERO contenuto del div .lbl-barcode */
+      const barcodeDiv = clone.querySelector('.lbl-barcode');
+      if (barcodeDiv) {
+        barcodeDiv.innerHTML =
+          `<img src="${dataUrl}" style="max-width:90px;width:90px;display:block;" alt="barcode">`;
+      }
+    }
   }
 
   const html = `<!DOCTYPE html><html lang="it">
