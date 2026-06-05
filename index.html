@@ -971,13 +971,38 @@ html,body { width:${w}mm; height:${h}mm; overflow:hidden; background:white; }
 function _apriPrint(titolo) {
   aggiorna();
   const label = document.getElementById('etichetta');
-  const fmt = FORMATI.find(f => f.id === formatoAttuale);
-  const html = `<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">
+  const fmt   = FORMATI.find(f => f.id === formatoAttuale);
+  const bVal  = document.getElementById('barcode_val').value.trim();
+  const bTipo = document.getElementById('barcode_type').value;
+
+  const html = `<!DOCTYPE html><html lang="it">
+<head>
+<meta charset="UTF-8">
 <title>${titolo}</title>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>
 <style>${_cssLabelStampa(fmt.w, fmt.h)}</style>
-</head><body>${label.outerHTML}
-<script>window.onload=function(){window.print();};<\/script>
-</body></html>`;
+</head>
+<body>
+${label.outerHTML}
+<script>
+window.onload = function() {
+  var bv = ${JSON.stringify(bVal)};
+  var bt = ${JSON.stringify(bTipo)};
+  if (bv) {
+    try {
+      JsBarcode('#barcode-svg', bv, {
+        format: bt, width: 1.2, height: 32,
+        displayValue: true, fontSize: 9, textMargin: 2,
+        margin: 0, background: 'transparent', lineColor: '#1a1a1a'
+      });
+    } catch(e) {}
+  }
+  window.print();
+};
+<\/script>
+</body>
+</html>`;
+
   const blob = new Blob([html], {type:'text/html;charset=utf-8'});
   const url  = URL.createObjectURL(blob);
   const win  = window.open(url, '_blank');
