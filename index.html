@@ -411,6 +411,7 @@ select option { background: #0d1b2a; }
 .lbl-date-row { display:flex; align-items:baseline; gap:3px; font-size:var(--fs-date); }
 .lbl-date-row span:first-child { white-space:nowrap; }
 .lbl-date-row .lbl-line { flex:1; border-bottom:0.5px solid #888; height:8px; min-width:10px; }
+.lbl-date-val { font-weight:bold; color:#1a1a1a; white-space:nowrap; margin-left:2px; }
 .lbl-barcode { display:flex; flex-direction:column; align-items:center; justify-content:flex-end; }
 .lbl-barcode svg { max-width:90px; height:auto; }
 .lbl-barcode-num { font-size:6px; text-align:center; color:#222; margin-top:1px; font-family:monospace; }
@@ -602,6 +603,21 @@ select option { background: #0d1b2a; }
     </select>
   </div>
 
+  <!-- Date e Lotto -->
+  <h2 style="margin-top:16px;">📅 Date e Lotto</h2>
+  <div class="field-group">
+    <span class="field-label" style="display:block;margin-bottom:4px;">Da consumare preferibilmente entro il</span>
+    <input type="text" id="data_consumo" value="" oninput="aggiorna()" placeholder="es. 31/12/2025">
+  </div>
+  <div class="field-group">
+    <span class="field-label" style="display:block;margin-bottom:4px;">Data di confezionamento</span>
+    <input type="text" id="data_confezionamento" value="" oninput="aggiorna()" placeholder="es. 01/06/2025">
+  </div>
+  <div class="field-group">
+    <span class="field-label" style="display:block;margin-bottom:4px;">Lotto</span>
+    <input type="text" id="lotto" value="" oninput="aggiorna()" placeholder="es. L2025001">
+  </div>
+
   <!-- Bottoni -->
   <div class="btn-group">
     <button class="btn btn-print" onclick="stampa()">🖨️ STAMPA</button>
@@ -660,20 +676,22 @@ select option { background: #0d1b2a; }
         <div class="lbl-dates">
           <div class="lbl-date-row">
             <span>Da consumare preferibilmente entro il:</span>
-            <div class="lbl-line"></div>
+            <span id="prev_data_consumo" class="lbl-date-val"></span>
+            <div class="lbl-line" id="line_data_consumo"></div>
           </div>
           <div class="lbl-date-row">
             <span>Data di confezionamento:</span>
-            <div class="lbl-line"></div>
+            <span id="prev_data_confezionamento" class="lbl-date-val"></span>
+            <div class="lbl-line" id="line_data_confezionamento"></div>
           </div>
           <div class="lbl-date-row">
             <span>Lotto:</span>
-            <div class="lbl-line"></div>
+            <span id="prev_lotto" class="lbl-date-val"></span>
+            <div class="lbl-line" id="line_lotto"></div>
           </div>
         </div>
         <div class="lbl-barcode">
           <svg id="barcode-svg"></svg>
-          <div class="lbl-barcode-num" id="barcode-num"></div>
         </div>
       </div>
 
@@ -863,6 +881,19 @@ function aggiornaCampi() {
 
   ['energia','grassi','saturi','carbo','zuccheri','fibre','proteine','sale'].forEach(c =>
     document.getElementById('pn_' + c).textContent = document.getElementById('n_' + c).value);
+
+  ['data_consumo','data_confezionamento','lotto'].forEach(id => {
+    const val = document.getElementById(id).value.trim();
+    const prev = document.getElementById('prev_' + id);
+    const line = document.getElementById('line_' + id);
+    if (val) {
+      prev.textContent = val;
+      line.style.display = 'none';
+    } else {
+      prev.textContent = '';
+      line.style.display = '';
+    }
+  });
 }
 
 function aggiornaBarcodeUI() {
@@ -872,13 +903,12 @@ function aggiornaBarcodeUI() {
   try {
     JsBarcode('#barcode-svg', val, {
       format:tipo, width:1.2, height:28,
-      displayValue:false, margin:0,
+      displayValue:true, fontSize:9, textMargin:2,
+      margin:0,
       background:'transparent', lineColor:'#1a1a1a'
     });
-    document.getElementById('barcode-num').textContent = val;
   } catch(e) {
     document.getElementById('barcode-svg').innerHTML = '';
-    document.getElementById('barcode-num').textContent = '⚠ ' + e.message;
   }
 }
 
@@ -912,6 +942,9 @@ function resetCampi() {
   document.getElementById('ambientale').value           = '';
   document.getElementById('barcode_val').value          = '0000000000000';
   document.getElementById('barcode_type').value         = 'EAN13';
+  document.getElementById('data_consumo').value         = '';
+  document.getElementById('data_confezionamento').value = '';
+  document.getElementById('lotto').value                = '';
   aggiorna();
 }
 
