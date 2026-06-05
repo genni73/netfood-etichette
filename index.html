@@ -433,6 +433,16 @@ select option { background: #0d1b2a; }
     overflow:hidden !important;
     /* width e height impostati da #print-page-style */
   }
+  /* Barcode+date ancorati al fondo della label */
+  .lbl-bottom {
+    position:absolute !important;
+    bottom:2mm !important;
+    left:3mm !important;
+    right:3mm !important;
+    margin-top:0 !important;
+    border-top:0.5px solid #bbb !important;
+    padding-top:3px !important;
+  }
   .lbl-barcode svg { max-width:80px !important; }
 }
 </style>
@@ -621,11 +631,12 @@ select option { background: #0d1b2a; }
   <!-- Bottoni -->
   <div class="btn-group">
     <button class="btn btn-print" onclick="stampa()">🖨️ STAMPA</button>
-    <button class="btn btn-save"  onclick="salvaHTML()">💾 SALVA COPIA</button>
+    <button class="btn btn-save"  onclick="salvaPDF()">📄 SALVA PDF</button>
     <button class="btn btn-reset" onclick="resetCampi()">↺ Reset</button>
   </div>
   <div style="margin-top:10px; font-size:11px; color:#546e7a; text-align:center;">
-    Stampa senza margini · formato selezionato · scala 100%
+    Stampa senza margini · scala 100% · dimensione carta = formato scelto<br>
+    <span style="color:#4fc3f7;">Per SALVA PDF → nella finestra scegli "Salva come PDF"</span>
   </div>
 
 </div><!-- /editor-panel -->
@@ -919,15 +930,14 @@ function aggiorna() { aggiornaCampi(); aggiornaBarcodeUI(); }
    ---------------------------------------------------------------- */
 function stampa() { window.print(); }
 
-function salvaHTML() {
+function salvaPDF() {
   aggiorna();
-  const blob = new Blob([document.documentElement.outerHTML], {type:'text/html'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
   const nome = (document.getElementById('titolo').value || 'etichetta')
     .toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-]/g,'');
-  a.download = 'etichetta-' + nome + '.html';
-  a.click();
+  const orig = document.title;
+  document.title = 'etichetta-' + nome;
+  window.print();
+  setTimeout(() => { document.title = orig; }, 1500);
 }
 
 function resetCampi() {
