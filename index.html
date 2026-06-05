@@ -344,16 +344,15 @@ select option { background: #0d1b2a; }
   color: #333;
   margin-top: -2px;
 }
-.label .lbl-section-title {
-  font-size: var(--fs-ingredienti);
-  font-weight: bold;
-  margin-bottom: 1px;
-}
-.label .lbl-ingredients {
+.label .lbl-ingredients-block {
   font-size: var(--fs-ingredienti);
   line-height: 1.4;
   text-align: justify;
 }
+.label .lbl-section-title {
+  font-weight: bold;
+}
+.label .lbl-ingredients { }
 .label .lbl-ingredients b,
 .label .lbl-ingredients strong { font-weight: 900; }
 .label .lbl-tracce {
@@ -416,25 +415,25 @@ select option { background: #0d1b2a; }
 .lbl-barcode svg { max-width:90px; height:auto; }
 .lbl-barcode-num { font-size:6px; text-align:center; color:#222; margin-top:1px; font-family:monospace; }
 
-/* ===== STAMPA — dimensioni gestite da #print-page-style ===== */
+/* ===== STAMPA — usa #print-overlay per avere sempre 1 pagina ===== */
 @media print {
-  html, body {
-    background:white !important;
-    padding:0 !important; margin:0 !important;
-  }
-  body * { visibility:hidden !important; }
-  .label, .label * { visibility:visible !important; }
-  .label {
-    position:fixed !important;
-    top:0 !important; left:0 !important;
-    padding: 2.5mm 3mm 2mm !important;
+  html, body { margin:0 !important; padding:0 !important; background:white !important; }
+  /* Nasconde tutto il body tranne l'overlay di stampa */
+  body > * { display:none !important; }
+  #print-overlay { display:block !important; margin:0; padding:0; }
+  /* Stili label dentro l'overlay */
+  #print-overlay .label {
+    margin:0 !important;
+    padding:2.5mm 3mm 2mm !important;
     border:none !important;
+    box-shadow:none !important;
     background:white !important;
     overflow:hidden !important;
+    position:relative !important;
     /* width e height impostati da #print-page-style */
   }
   /* Barcode+date ancorati al fondo della label */
-  .lbl-bottom {
+  #print-overlay .lbl-bottom {
     position:absolute !important;
     bottom:2mm !important;
     left:3mm !important;
@@ -443,7 +442,7 @@ select option { background: #0d1b2a; }
     border-top:0.5px solid #bbb !important;
     padding-top:3px !important;
   }
-  .lbl-barcode svg { max-width:80px !important; }
+  #print-overlay .lbl-barcode svg { max-width:80px !important; }
 }
 </style>
 </head>
@@ -651,8 +650,7 @@ select option { background: #0d1b2a; }
       <div class="lbl-title"    id="prev_titolo">FRITTATINA CLASSICA</div>
       <div class="lbl-subtitle" id="prev_sottotitolo">prodotto surgelato</div>
 
-      <div class="lbl-section-title">INGREDIENTI:</div>
-      <div class="lbl-ingredients" id="prev_ingredienti"></div>
+      <div class="lbl-ingredients-block"><span class="lbl-section-title">INGREDIENTI: </span><span class="lbl-ingredients" id="prev_ingredienti"></span></div>
       <div class="lbl-tracce"      id="prev_tracce"></div>
 
       <table class="lbl-nutri-table">
@@ -826,8 +824,8 @@ function aggiornaPageStyle(w, h) {
   document.getElementById('print-page-style').textContent = `
     @media print {
       @page { size: ${w}mm ${h}mm; margin: 0; }
-      html, body { width:${w}mm; height:${h}mm; }
-      .label { width:${w}mm !important; height:${h}mm !important; }
+      html, body { width:${w}mm !important; height:${h}mm !important; overflow:hidden !important; }
+      #print-overlay .label { width:${w}mm !important; height:${h}mm !important; }
     }`;
 }
 
@@ -928,16 +926,32 @@ function aggiorna() { aggiornaCampi(); aggiornaBarcodeUI(); }
 /* ----------------------------------------------------------------
    STAMPA / SALVA / RESET
    ---------------------------------------------------------------- */
-function stampa() { window.print(); }
+function _copiaLabelPerStampa() {
+  aggiorna();
+  const overlay = document.getElementById('print-overlay');
+  const clone = document.getElementById('etichetta').cloneNode(true);
+  clone.removeAttribute('id');
+  overlay.innerHTML = '';
+  overlay.appendChild(clone);
+}
+
+function stampa() {
+  _copiaLabelPerStampa();
+  window.print();
+  setTimeout(() => { document.getElementById('print-overlay').innerHTML = ''; }, 1500);
+}
 
 function salvaPDF() {
-  aggiorna();
+  _copiaLabelPerStampa();
   const nome = (document.getElementById('titolo').value || 'etichetta')
     .toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-]/g,'');
   const orig = document.title;
   document.title = 'etichetta-' + nome;
   window.print();
-  setTimeout(() => { document.title = orig; }, 1500);
+  setTimeout(() => {
+    document.title = orig;
+    document.getElementById('print-overlay').innerHTML = '';
+  }, 1500);
 }
 
 function resetCampi() {
@@ -974,5 +988,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('ingredienti').addEventListener('keyup', aggiornaToolbar);
 });
 </script>
+<!-- Contenitore esclusivo per la stampa — nascosto a schermo, visibile solo in @media print -->
+<div id="print-overlay" style="display:none;margin:0;padding:0;"></div>
 </body>
 </html>
